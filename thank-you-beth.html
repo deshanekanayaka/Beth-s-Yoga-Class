@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Thank You, Beth</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: "Georgia", serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      background: #1a1a1a;
+      color: #fff;
+      touch-action: manipulation;
+    }
+
+    .screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      padding-bottom: max(3rem, env(safe-area-inset-bottom));
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      pointer-events: none;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .screen.fade-out {
+      opacity: 0;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+      font-weight: 300;
+    }
+
+    p {
+      font-size: 1.2rem;
+      line-height: 1.8;
+      opacity: 0.9;
+    }
+
+    .start-btn {
+      margin-top: 3rem;
+      padding: 1rem 3rem;
+      font-size: 1.2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: "Georgia", serif;
+    }
+
+    .start-btn:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Mute button */
+    .mute-btn {
+      position: fixed;
+      top: max(1rem, env(safe-area-inset-top));
+      right: 1.2rem;
+      z-index: 999;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50%;
+      width: 2.4rem;
+      height: 2.4rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.6);
+      transition: background 0.2s;
+    }
+
+    .mute-btn.visible {
+      display: flex;
+    }
+
+    .mute-btn:active {
+      background: rgba(255,255,255,0.18);
+    }
+
+    /* LED Lights gradient */
+    .lights-screen {
+      background: linear-gradient(
+              135deg,
+              #8b5cf6 0%,
+              #ec4899 50%,
+              #8b5cf6 100%
+      );
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* Music note animation */
+    .music-note {
+      font-size: 4rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .playlist-cover {
+      width: 200px;
+      height: 200px;
+      border-radius: 15px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      object-fit: cover;
+    }
+
+    @keyframes float {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    /* Breathing circle */
+    .breath-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+
+    .breath-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .breath-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(to top, #8b5cf6, #ec4899);
+      transition: height 0.1s linear;
+    }
+
+    .breath-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      font-size: 1.5rem;
+    }
+
+    .instruction {
+      margin-top: 2rem;
+      font-size: 1rem;
+      opacity: 0.7;
+    }
+
+    /* Pose icons */
+    .pose-icon {
+      font-size: 5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Affirmation card */
+    .card-container {
+      perspective: 1000px;
+      width: 90%;
+      max-width: 350px;
+      height: 500px;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .card-front {
+      background: #0a0a0a;
+      border: 2px solid #d4af37;
+      box-shadow: 0 10px 40px rgba(212, 175, 55, 0.3);
+    }
+
+    .card-back {
+      background: #0a0a0a;
+      border: 2px solid #d4af37;
+      transform: rotateY(180deg);
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      color: #d4af37;
+      margin-bottom: 2rem;
+      letter-spacing: 3px;
+      font-weight: 300;
+    }
+
+    .card-text {
+      font-size: 1.3rem;
+      color: #d4af37;
+      line-height: 1.8;
+      font-style: italic;
+    }
+
+    .thank-you {
+      font-size: 3rem;
+      font-weight: 300;
+      letter-spacing: 4px;
+      color: #d4af37;
+    }
+
+    .moon-phases {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+      opacity: 0.6;
+      letter-spacing: 8px;
+    }
+
+    .sparkles {
+      position: absolute;
+      font-size: 1.5rem;
+      opacity: 0.4;
+      animation: twinkle 2s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    .tap-hint {
+      position: absolute;
+      bottom: 3rem;
+      font-size: 0.9rem;
+      opacity: 0.5;
+      animation: pulse 2s ease-in-out infinite;
+      z-index: 100;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background audio -->
+<audio id="bgMusic" loop src="music.mp3" preload="auto"></audio>
+
+<!-- Mute / unmute button (shown after Begin) -->
+<button class="mute-btn" id="muteBtn" title="Toggle music" aria-label="Toggle music">🔊</button>
+
+<!-- Screen 0: Start -->
+<div class="screen active" data-screen="0">
+  <h1>Beth's Yoga Class</h1>
+  <p>A journey of peace and transformation</p>
+  <button class="start-btn" onclick="startExperience()">Begin</button>
+</div>
+
+<!-- Screen 1: Lights -->
+<div class="screen lights-screen" data-screen="1">
+  <h2>The lights shift...</h2>
+  <p>Purple and pink fill the room</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 2: Music -->
+<div class="screen" data-screen="2">
+  <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23c084fc;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%23f472b6;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23fb923c;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23grad)' rx='15'/%3E%3Ctext x='50%25' y='50%25' font-size='80' text-anchor='middle' dominant-baseline='middle' fill='white' font-family='Georgia, serif'%3E♪%3C/text%3E%3C/svg%3E"
+          alt="Yoga 3 Playlist"
+          class="playlist-cover"
+  />
+  <h2>The music begins...</h2>
+  <p>Yoga 3 Playlist</p>
+  <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 0.5rem">
+    Soft, instrumental melodies
+  </p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 3: Breathing -->
+<div class="screen" data-screen="3">
+  <h2>Breathe</h2>
+  <div class="breath-container">
+    <div class="breath-circle">
+      <div class="breath-fill" id="breathFill"></div>
+    </div>
+    <div class="breath-text">Hold</div>
+  </div>
+  <div class="instruction">Hold your finger on the screen</div>
+</div>
+
+<!-- Screen 4: Finger stretching - Part 1 -->
+<div class="screen" data-screen="4">
+  <div class="pose-icon">✋</div>
+  <p>Figure-8s... clockwise!</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 5: Finger stretching - Part 2 -->
+<div class="screen" data-screen="5">
+  <div class="pose-icon">✋</div>
+  <h2>Now the other way around</h2>
+  <p>Anti-clockwise...</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 6: Finger stretching - Joke -->
+<div class="screen" data-screen="6">
+  <div class="pose-icon">😄</div>
+  <p style="font-size: 1.4rem; font-style: italic">
+    "Left hand is always tricky!"
+  </p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 7: Warrior II -->
+<div class="screen" data-screen="7">
+  <div class="pose-icon">🧘‍♀️</div>
+  <h2>Warrior II & Reverse</h2>
+  <p>Strong and grounded</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 8: Downward Dog -->
+<div class="screen" data-screen="8">
+  <div class="pose-icon">🐕</div>
+  <h2>Downward Dog</h2>
+  <p>Finding length and space</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 9: Pigeon Pose -->
+<div class="screen" data-screen="9">
+  <div class="pose-icon">🕊️</div>
+  <h2>Pigeon Pose</h2>
+  <p>Opening the hips</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 10: Sun Salutations -->
+<div class="screen" data-screen="10">
+  <div class="pose-icon">☀️</div>
+  <h2>Sun Salutations</h2>
+  <p>Flowing with grace</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 11: Child's Pose -->
+<div class="screen" data-screen="11">
+  <div class="pose-icon">🙏</div>
+  <h2>Child's Pose</h2>
+  <p>Rest and restore</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 12: Happy Baby -->
+<div class="screen" data-screen="12">
+  <div class="pose-icon">👶</div>
+  <h2>Happy Baby</h2>
+  <p>Playful and free</p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 13: Savasana -->
+<div class="screen" data-screen="13">
+  <div class="pose-icon">💫</div>
+  <h2>Savasana</h2>
+  <p>Let go of all thoughts...</p>
+  <p style="font-size: 1rem; margin-top: 1rem; opacity: 0.8">
+    We can come back to them later
+  </p>
+  <div class="tap-hint">Tap to continue</div>
+</div>
+
+<!-- Screen 14: Affirmation Card -->
+<div class="screen" data-screen="14">
+
+  <div class="sparkles" style="top: 10%; left: 15%">✦</div>
+  <div class="sparkles" style="top: 15%; right: 20%">✧</div>
+  <div class="sparkles" style="bottom: 20%; left: 20%">✦</div>
+  <div class="sparkles" style="bottom: 15%; right: 15%">✧</div>
+
+  <div class="card-container">
+    <div class="card" id="affirmationCard">
+      <div class="card-front">
+        <div class="moon-phases">☽ ◐ ○ ◑ ☾</div>
+        <div class="card-title">AFFIRMATION</div>
+        <div class="card-text">
+          In this space you've created,<br />
+          we find strength, peace,<br />
+          and ourselves.
+        </div>
+        <p
+                style="
+                margin-top: 2rem;
+                font-size: 1rem;
+                color: #d4af37;
+                opacity: 0.7;
+              "
+        >
+          I leave feeling like a new person.
+        </p>
+      </div>
+      <div class="card-back">
+        <div class="thank-you">Thank you,<br />Beth!</div>
+      </div>
+    </div>
+  </div>
+  <div class="tap-hint" id="screen14hint">Tap the card</div>
+</div>
+
+
+<!-- Screen 15: Oxford Circus -->
+<div class="screen" data-screen="15" style="background: #0f0f1a;">
+  <div style="font-size: 3.5rem; margin-bottom: 1.5rem; animation: float 3s ease-in-out infinite;">🚇</div>
+  <h2 style="font-size: 1.5rem; font-weight: 300; letter-spacing: 3px; margin-bottom: 1rem; opacity: 0.95;">Oxford Circus</h2>
+  <p style="margin-top: 2.5rem; font-size: 0.9rem; opacity: 0.4; letter-spacing: 1px;">See you later</p>
+</div>
+
+<script>
+  let currentScreen = 0;
+  let isBreathComplete = false;
+
+  /* ── Audio ── */
+  const audio = document.getElementById('bgMusic');
+  const muteBtn = document.getElementById('muteBtn');
+
+  // Fade helpers
+  function fadeIn(el, targetVol, durationMs) {
+    el.volume = 0;
+    const steps = 40;
+    const interval = durationMs / steps;
+    const increment = targetVol / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      el.volume = Math.min(targetVol, el.volume + increment);
+      if (step >= steps) clearInterval(timer);
+    }, interval);
+  }
+
+  function startMusic() {
+    audio.play().then(() => {
+      fadeIn(audio, 0.55, 4000); // fade to 55% volume over 4 s
+    }).catch(() => {
+      // Autoplay blocked — music will stay silent; user can still unmute manually
+    });
+    muteBtn.classList.add('visible');
+  }
+
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    audio.muted = !audio.muted;
+    muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+  });
+
+  /* ── Screens ── */
+  function startExperience() {
+    startMusic();
+    nextScreen();
+  }
+
+  function nextScreen() {
+    const current = document.querySelector(
+            `[data-screen="${currentScreen}"]`,
+    );
+    current.classList.remove("active");
+    current.classList.add("fade-out");
+
+    setTimeout(() => {
+      current.classList.remove("fade-out");
+      currentScreen++;
+      const next = document.querySelector(
+              `[data-screen="${currentScreen}"]`,
+      );
+      if (next) {
+        next.classList.add("active");
+
+        // Start breath hold interaction
+        if (currentScreen === 3) {
+          setupBreathScreen();
+        }
+      }
+    }, 800);
+  }
+
+  function setupBreathScreen() {
+    const screen = document.querySelector('[data-screen="3"]');
+    const breathFill = document.getElementById("breathFill");
+    const breathText = document.querySelector(
+            '[data-screen="3"] .breath-text',
+    );
+
+    let touchStartTime = null;
+    let animationFrame = null;
+    let isExhaling = false;
+    let exhaleStartTime = null;
+
+    function updateBreath() {
+      if (touchStartTime && !isExhaling) {
+        const elapsed = Date.now() - touchStartTime;
+        const progress = Math.min(elapsed / 5000, 1);
+        breathFill.style.height = progress * 100 + "%";
+
+        if (progress >= 1) {
+          isExhaling = true;
+          exhaleStartTime = Date.now();
+          breathText.textContent = "Breathe out...";
+          animationFrame = requestAnimationFrame(updateBreath);
+        } else {
+          animationFrame = requestAnimationFrame(updateBreath);
+        }
+      } else if (isExhaling && exhaleStartTime) {
+        const elapsed = Date.now() - exhaleStartTime;
+        const progress = Math.min(elapsed / 5000, 1);
+        breathFill.style.height = (1 - progress) * 100 + "%";
+
+        if (progress >= 1 && !isBreathComplete) {
+          isBreathComplete = true;
+          breathText.textContent = "Complete";
+          setTimeout(() => {
+            nextScreen();
+            isBreathComplete = false;
+            isExhaling = false;
+          }, 1000);
+        } else if (progress < 1) {
+          animationFrame = requestAnimationFrame(updateBreath);
+        }
+      }
+    }
+
+    function startBreath(e) {
+      e.preventDefault();
+      if (!isExhaling && !isBreathComplete) {
+        touchStartTime = Date.now();
+        breathText.textContent = "Breathe in...";
+        updateBreath();
+      }
+    }
+
+    function endBreath(e) {
+      e.preventDefault();
+      if (!isExhaling && !isBreathComplete && touchStartTime) {
+        touchStartTime = null;
+        breathFill.style.height = "0%";
+        breathText.textContent = "Hold";
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+      }
+    }
+
+    screen.addEventListener("touchstart", startBreath);
+    screen.addEventListener("mousedown", startBreath);
+    screen.addEventListener("touchend", endBreath);
+    screen.addEventListener("mouseup", endBreath);
+    screen.addEventListener("touchcancel", endBreath);
+  }
+
+  // Regular tap navigation for all screens except breath and card
+  document.addEventListener("click", (e) => {
+    const activeScreen = document.querySelector(".screen.active");
+    const screenNum = parseInt(activeScreen.dataset.screen);
+
+    if (screenNum === 3 || screenNum === 14) return;
+    if (e.target.classList.contains("start-btn")) return;
+
+    if (screenNum > 0 && screenNum < 15) {
+      nextScreen();
+    }
+  });
+
+  // Card flip interaction
+  document
+          .getElementById("affirmationCard")
+          .addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (this.classList.contains("flipped")) {
+              nextScreen();
+            } else {
+              this.classList.add("flipped");
+              document.getElementById("screen14hint").textContent = "Tap again to continue";
+            }
+          });
+</script>
+</body>
+</html>
